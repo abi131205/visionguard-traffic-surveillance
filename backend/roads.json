@@ -1,0 +1,185 @@
+{
+  "intersections": [
+    {
+      "id": "CAM-BTP-001",
+      "name": "Silk Board Junction",
+      "allowed_direction_deg": 0,
+      "tolerance_deg": 30,
+      "road_type": "One-Way (South \u00e2\u2020\u2019 North)",
+      "stop_line_y": 480,
+      "signal_cycle": {
+        "red": 30,
+        "green": 20,
+        "amber": 5
+      },
+      "no_parking_zones": [
+        [
+          [
+            50,
+            400
+          ],
+          [
+            200,
+            400
+          ],
+          [
+            200,
+            550
+          ],
+          [
+            50,
+            550
+          ]
+        ]
+      ],
+      "active": true
+    },
+    {
+      "id": "CAM-BTP-002",
+      "name": "Marathahalli Bridge",
+      "allowed_direction_deg": 90,
+      "tolerance_deg": 30,
+      "road_type": "One-Way (West \u00e2\u2020\u2019 East)",
+      "stop_line_y": 500,
+      "signal_cycle": {
+        "red": 30,
+        "green": 25,
+        "amber": 5
+      },
+      "no_parking_zones": [
+        [
+          [
+            400,
+            100
+          ],
+          [
+            600,
+            100
+          ],
+          [
+            600,
+            300
+          ],
+          [
+            400,
+            300
+          ]
+        ]
+      ],
+      "active": true
+    },
+    {
+      "id": "CAM-BTP-003",
+      "name": "KR Puram Junction",
+      "allowed_direction_deg": 180,
+      "tolerance_deg": 30,
+      "road_type": "One-Way (North \u00e2\u2020\u2019 South)",
+      "stop_line_y": 450,
+      "signal_cycle": {
+        "red": 40,
+        "green": 30,
+        "amber": 5
+      },
+      "no_parking_zones": [],
+      "active": true
+    },
+    {
+      "id": "CAM-BTP-004",
+      "name": "Hebbal Flyover",
+      "allowed_direction_deg": 270,
+      "tolerance_deg": 30,
+      "road_type": "One-Way (East \u00e2\u2020\u2019 West)",
+      "stop_line_y": 520,
+      "signal_cycle": {
+        "red": 25,
+        "green": 20,
+        "amber": 5
+      },
+      "no_parking_zones": [
+        [
+          [
+            100,
+            200
+          ],
+          [
+            300,
+            200
+          ],
+          [
+            300,
+            400
+          ],
+          [
+            100,
+            400
+          ]
+        ]
+      ],
+      "active": true
+    },
+    {
+      "id": "CAM-BTP-005",
+      "name": "Electronic City Toll",
+      "allowed_direction_deg": 0,
+      "tolerance_deg": 30,
+      "road_type": "One-Way (South \u00e2\u2020\u2019 North)",
+      "stop_line_y": 460,
+      "signal_cycle": {
+        "red": 35,
+        "green": 25,
+        "amber": 5
+      },
+      "no_parking_zones": [],
+      "active": true
+    },
+    {
+      "id": "CAM-BTP-006",
+      "name": "Koramangala 5th Block",
+      "allowed_direction_deg": 90,
+      "tolerance_deg": 30,
+      "road_type": "One-Way (West \u00e2\u2020\u2019 East)",
+      "stop_line_y": 490,
+      "signal_cycle": {
+        "red": 30,
+        "green": 20,
+        "amber": 5
+      },
+      "no_parking_zones": [
+        [
+          [
+            200,
+            450
+          ],
+          [
+            450,
+            450
+          ],
+          [
+            450,
+            600
+          ],
+          [
+            200,
+            600
+          ]
+        ]
+      ],
+      "active": true
+    },
+    {
+      "id": "CAM-BTP-007",
+      "name": "Hebbal Flyover",
+      "allowed_direction_deg": 0.0,
+      "tolerance_deg": 30.0,
+      "road_type": "One-Way (South \u2192 North)",
+      "stop_line_y": 480,
+      "signal_cycle": {
+        "red": 30,
+        "green": 20,
+        "amber": 5
+      },
+      "no_parking_zones": [],
+      "active": true
+    }
+  ]
+}
