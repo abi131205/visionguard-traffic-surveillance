@@ -75,7 +75,8 @@ const AppContent: React.FC = () => {
         setServerOnline(true);
 
         // Establish real Socket.IO Connection
-        const realSocket = io('http://localhost:8000', {
+        const socketUrl = window.visionguard_use_ip ? 'http://127.0.0.1:8000' : 'http://localhost:8000';
+        const realSocket = io(socketUrl, {
           transports: ['websocket'],
           autoConnect: true,
           reconnection: true,

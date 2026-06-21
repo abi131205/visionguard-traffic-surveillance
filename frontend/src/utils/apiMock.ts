@@ -7,10 +7,11 @@ import {
 } from './mockData';
 import type { Intersection, Incident, SystemStatus } from '../types/index';
 
-// Declare a global flag on window for tracking offline demo status
+// Declare global flags on window for tracking offline demo status
 declare global {
   interface Window {
     visionguard_offline: boolean;
+    visionguard_use_ip: boolean;
   }
 }
 
@@ -386,6 +387,11 @@ axios.interceptors.request.use((config) => {
   if (window.visionguard_offline) {
     // Override adapter to intercept request and bypass network
     config.adapter = mockAdapter;
+  } else if (window.visionguard_use_ip) {
+    // Rewrite localhost:8000 to 127.0.0.1:8000 to avoid IPv6 loopback routing failures on Windows
+    if (config.url && config.url.includes('http://localhost:8000')) {
+      config.url = config.url.replace('http://localhost:8000', 'http://127.0.0.1:8000');
+    }
   }
   return config;
 }, (error) => {
@@ -401,26 +407,44 @@ export async function detectBackendOnline(): Promise<boolean> {
     return false;
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout limit
+
+  // 1. Try resolving localhost:8000 (IPv6 / standard DNS)
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1200); // 1.2s timeout
-    
-    // Use native fetch to bypass Axios interceptors
     const response = await fetch('http://localhost:8000/api/stats', {
       method: 'GET',
       signal: controller.signal,
       mode: 'cors'
     });
-    
-    clearTimeout(timeoutId);
     if (response.ok) {
+      clearTimeout(timeoutId);
       window.visionguard_offline = false;
+      window.visionguard_use_ip = false;
       return true;
     }
   } catch (e) {
-    // Failed to connect, fallback to offline demo mode
+    // localhost failed, proceed to try raw IPv4 address
   }
-  
+
+  // 2. Try resolving 127.0.0.1:8000 (forces IPv4 routing directly to Python Uvicorn binding)
+  try {
+    const response = await fetch('http://127.0.0.1:8000/api/stats', {
+      method: 'GET',
+      signal: controller.signal,
+      mode: 'cors'
+    });
+    if (response.ok) {
+      clearTimeout(timeoutId);
+      window.visionguard_offline = false;
+      window.visionguard_use_ip = true;
+      return true;
+    }
+  } catch (e) {
+    // Both attempts failed
+  }
+
+  clearTimeout(timeoutId);
   if (typeof window !== 'undefined') {
     window.visionguard_offline = true;
   }
