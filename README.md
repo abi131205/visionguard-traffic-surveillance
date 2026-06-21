@@ -4,6 +4,12 @@ VisionGuard is a full-stack, production-grade automated traffic surveillance and
 
 ---
 
+## 🌐 Quick Links
+* **GitHub Repository**: [https://github.com/abi131205/visionguard-traffic-surveillance](https://github.com/abi131205/visionguard-traffic-surveillance)
+* **Hosted Live Web Demo**: [https://visionguard-traffic-surveillance.vercel.app](https://visionguard-traffic-surveillance.vercel.app) *(Runs in Offline Simulation Mode with active signal cycles, mock CCTV feeds, and alert streams)*
+
+---
+
 ## 🚀 Key Features
 
 * **Image Preprocessing**: Auto-enhancement filters including low-light histogram stretching (CLAHE), unsharp-mask motion de-blurring, median de-noising (rain artifacts), and morphological top-hat transforms (shadow correction).
