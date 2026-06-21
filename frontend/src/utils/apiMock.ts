@@ -407,9 +407,18 @@ export async function detectBackendOnline(): Promise<boolean> {
     return false;
   }
 
+  // If running locally (localhost or 127.0.0.1), disable offline simulation mode
+  // entirely to preserve 100% original backend connectivity and prevent timeouts.
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    window.visionguard_offline = false;
+    window.visionguard_use_ip = false;
+    return true;
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout limit
 
+  // For other domains (e.g. non-localhost HTTP deployment):
   // 1. Try resolving localhost:8000 (IPv6 / standard DNS)
   try {
     const response = await fetch('http://localhost:8000/api/stats', {

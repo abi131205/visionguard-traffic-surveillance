@@ -119,15 +119,6 @@ const AppContent: React.FC = () => {
           if (!isMounted) return;
           setSystemStatus(data);
         });
-
-        // Periodically verify if backend is still online
-        keepAliveInterval = setInterval(async () => {
-          const stillOnline = await detectBackendOnline();
-          if (!stillOnline && isMounted) {
-            // If server went down, refresh app to failover to Offline Mode
-            window.location.reload();
-          }
-        }, 10000);
       }
     };
 
