@@ -3,6 +3,11 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
 import axios from 'axios';
 
+// Mock interceptors and sockets imports
+import './utils/apiMock';
+import { detectBackendOnline } from './utils/apiMock';
+import { createMockSocket } from './utils/mockSocket';
+
 // Component imports
 import { Navbar } from './components/Navbar';
 import { ToastProvider, useToast } from './components/Toast';
@@ -22,6 +27,7 @@ const AppContent: React.FC = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [socketConnected, setSocketConnected] = useState<boolean>(false);
   const [serverOnline, setServerOnline] = useState<boolean>(false);
+  const [isOfflineDemo, setIsOfflineDemo] = useState<boolean>(false);
   const [cameraSignals, setCameraSignals] = useState<Record<string, 'RED' | 'GREEN' | 'AMBER'>>({});
   
   const [systemStatus, setSystemStatus] = useState<SystemStatus>({
@@ -32,62 +38,106 @@ const AppContent: React.FC = () => {
 
   // Check server availability and connect websocket
   useEffect(() => {
-    // 1. HTTP server availability checker loop
-    const checkServer = () => {
-      axios.get('http://localhost:8000/api/stats')
-        .then(() => setServerOnline(true))
-        .catch(() => {
-          setServerOnline(false);
+    let socketClient: any = null;
+    let keepAliveInterval: any = null;
+    let isMounted = true;
+
+    const initializeConnection = async () => {
+      const online = await detectBackendOnline();
+      if (!isMounted) return;
+
+      if (!online) {
+        setIsOfflineDemo(true);
+        setServerOnline(true);
+        setSocketConnected(true);
+        showToast('Local traffic server offline. Running in Offline Demo Mode.', 'info', 4000);
+
+        // Establish simulated connection
+        const mockSocket = createMockSocket();
+        socketClient = mockSocket;
+        setSocket(mockSocket);
+
+        // Listen to simulated events
+        mockSocket.on('signal_state_change', (data: SignalState) => {
+          if (!isMounted) return;
+          setCameraSignals((prev) => ({
+            ...prev,
+            [data.camera_id]: data.signal
+          }));
+        });
+
+        mockSocket.on('system_status', (data: SystemStatus) => {
+          if (!isMounted) return;
+          setSystemStatus(data);
+        });
+      } else {
+        setIsOfflineDemo(false);
+        setServerOnline(true);
+
+        // Establish real Socket.IO Connection
+        const realSocket = io('http://localhost:8000', {
+          transports: ['websocket'],
+          autoConnect: true,
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 8000,
+          reconnectionAttempts: Infinity
+        });
+        socketClient = realSocket;
+        setSocket(realSocket);
+
+        realSocket.on('connect', () => {
+          if (!isMounted) return;
+          setSocketConnected(true);
+          setServerOnline(true);
+          showToast('Connected to live traffic server.', 'success', 2000);
+        });
+
+        realSocket.on('disconnect', () => {
+          if (!isMounted) return;
+          setSocketConnected(false);
+          showToast('Lost connection to traffic server. Reconnecting...', 'warning', 3000);
+        });
+
+        realSocket.on('connect_error', () => {
+          if (!isMounted) return;
           setSocketConnected(false);
         });
+
+        // Listen to signal state changes globally
+        realSocket.on('signal_state_change', (data: SignalState) => {
+          if (!isMounted) return;
+          setCameraSignals((prev) => ({
+            ...prev,
+            [data.camera_id]: data.signal
+          }));
+        });
+
+        // Listen to system statistics updates globally
+        realSocket.on('system_status', (data: SystemStatus) => {
+          if (!isMounted) return;
+          setSystemStatus(data);
+        });
+
+        // Periodically verify if backend is still online
+        keepAliveInterval = setInterval(async () => {
+          const stillOnline = await detectBackendOnline();
+          if (!stillOnline && isMounted) {
+            // If server went down, refresh app to failover to Offline Mode
+            window.location.reload();
+          }
+        }, 10000);
+      }
     };
 
-    checkServer();
-    const interval = setInterval(checkServer, 5000);
-
-    // 2. Establish Socket.IO Connection with auto-reconnection and exponential backoff
-    const socketClient = io('http://localhost:8000', {
-      transports: ['websocket'],
-      autoConnect: true,
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 8000,
-      reconnectionAttempts: Infinity
-    });
-
-    socketClient.on('connect', () => {
-      setSocketConnected(true);
-      setServerOnline(true);
-      showToast('Socket.IO connection established with traffic server.', 'success', 2000);
-    });
-
-    socketClient.on('disconnect', () => {
-      setSocketConnected(false);
-      showToast('Websocket connection closed. Reconnecting...', 'warning', 3000);
-    });
-
-    socketClient.on('connect_error', () => {
-      setSocketConnected(false);
-    });
-
-    // Listen to signal state changes globally
-    socketClient.on('signal_state_change', (data: SignalState) => {
-      setCameraSignals((prev) => ({
-        ...prev,
-        [data.camera_id]: data.signal
-      }));
-    });
-
-    // Listen to system statistics updates globally
-    socketClient.on('system_status', (data: SystemStatus) => {
-      setSystemStatus(data);
-    });
-
-    setSocket(socketClient);
+    initializeConnection();
 
     return () => {
-      clearInterval(interval);
-      socketClient.disconnect();
+      isMounted = false;
+      if (keepAliveInterval) clearInterval(keepAliveInterval);
+      if (socketClient && typeof socketClient.disconnect === 'function') {
+        socketClient.disconnect();
+      }
     };
   }, [showToast]);
 
@@ -99,6 +149,7 @@ const AppContent: React.FC = () => {
           socketConnected={socketConnected} 
           serverOnline={serverOnline} 
           cameraSignals={cameraSignals} 
+          isOfflineDemo={isOfflineDemo}
         />
         
         {/* Router mapping */}

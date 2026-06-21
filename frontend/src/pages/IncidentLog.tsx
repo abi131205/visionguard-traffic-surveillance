@@ -64,13 +64,122 @@ export const IncidentLog: React.FC = () => {
 
   // Export handlers
   const handleExportCSV = () => {
-    window.open('http://localhost:8000/api/export/csv', '_blank');
-    showToast('Initiating CSV spreadsheet export download.', 'success');
+    if (window.visionguard_offline) {
+      try {
+        const headers = ["ID", "Timestamp", "Camera", "Intersection", "Vehicle Track ID", "Vehicle Class", "License Plate", "Plate Confidence", "Violation", "Severity", "Confidence", "Status"];
+        const rows = incidents.map(inc => [
+          inc.id,
+          inc.timestamp,
+          inc.camera_id,
+          inc.intersection,
+          inc.vehicle_track_id,
+          inc.vehicle_class,
+          inc.license_plate || 'N/A',
+          inc.plate_confidence || 'N/A',
+          inc.violation_type,
+          inc.severity,
+          inc.confidence,
+          inc.status
+        ]);
+        const csvContent = "data:text/csv;charset=utf-8," 
+          + [headers.join(",")].concat(rows.map(e => e.map(val => `"${val}"`).join(","))).join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `visionguard_export_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('Generated and downloaded CSV spreadsheet locally.', 'success');
+      } catch (err) {
+        showToast('Failed to export CSV locally.', 'error');
+      }
+    } else {
+      window.open('http://localhost:8000/api/export/csv', '_blank');
+      showToast('Initiating CSV spreadsheet export download.', 'success');
+    }
   };
 
   const handleExportPDF = () => {
-    window.open('http://localhost:8000/api/export/report', '_blank');
-    showToast('Compiling system audit PDF summary. Please wait.', 'success');
+    if (window.visionguard_offline) {
+      try {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+          showToast('Popup blocker prevented PDF generation. Please allow popups.', 'error');
+          return;
+        }
+        
+        const rowsHtml = incidents.map(inc => `
+          <tr style="border-bottom: 1px solid #E7DED2; font-family: monospace; font-size: 11px;">
+            <td style="padding: 8px 4px; font-weight: bold; color: #BC6C25;">${inc.id}</td>
+            <td style="padding: 8px 4px;">${new Date(inc.timestamp).toLocaleString()}</td>
+            <td style="padding: 8px 4px;">${inc.intersection} (${inc.camera_id})</td>
+            <td style="padding: 8px 4px; font-weight: bold;">${inc.license_plate || 'UNDETECTED'}</td>
+            <td style="padding: 8px 4px; color: #577590;">${inc.violation_type}</td>
+            <td style="padding: 8px 4px;"><span style="padding: 2px 6px; border-radius: 4px; font-weight: bold; background: ${inc.severity === 'HIGH' ? '#FEE2E2; color: #991B1B' : '#FEF3C7; color: #92400E'}">${inc.severity}</span></td>
+            <td style="padding: 8px 4px; text-transform: uppercase;">${inc.status.replace('_', ' ')}</td>
+          </tr>
+        `).join('');
+
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>VisionGuard Traffic Surveillance System - Incidents Audit Summary</title>
+              <style>
+                body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #2B2D42; padding: 40px; background: #F8F4EE; }
+                .header { border-bottom: 2px solid #BC6C25; padding-bottom: 15px; margin-bottom: 30px; }
+                .title { font-size: 24px; font-weight: bold; color: #2B2D42; }
+                .subtitle { font-size: 12px; color: #8D99AE; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
+                .metadata { display: flex; justify-content: space-between; font-size: 11px; color: #577590; margin-top: 15px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th { text-align: left; padding: 10px 4px; border-bottom: 2px solid #E7DED2; font-size: 11px; text-transform: uppercase; color: #577590; }
+                @media print {
+                  body { background: #FFFFFF; padding: 0; }
+                  .no-print { display: none; }
+                }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <div class="title">VisionGuard Traffic Surveillance Audit Report</div>
+                <div class="subtitle">BTP Traffic Control - Simulation Mode Report</div>
+                <div class="metadata">
+                  <span>Generated: ${new Date().toLocaleString()}</span>
+                  <span>Scope: Active Session Database Log (${incidents.length} Records)</span>
+                </div>
+              </div>
+              <button class="no-print" onclick="window.print();" style="margin-bottom: 20px; padding: 8px 16px; background: #BC6C25; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Print / Save PDF</button>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Incident ID</th>
+                    <th>Timestamp</th>
+                    <th>Junction</th>
+                    <th>Plate Number</th>
+                    <th>Violation Class</th>
+                    <th>Severity</th>
+                    <th>Challan Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rowsHtml}
+                </tbody>
+              </table>
+              <script>
+                setTimeout(() => { window.print(); }, 500);
+              </script>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        showToast('Compiling PDF summary. Please use printer save options.', 'success');
+      } catch (err) {
+        showToast('Failed to compile PDF summary locally.', 'error');
+      }
+    } else {
+      window.open('http://localhost:8000/api/export/report', '_blank');
+      showToast('Compiling system audit PDF summary. Please wait.', 'success');
+    }
   };
 
   // Status updates

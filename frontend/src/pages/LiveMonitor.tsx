@@ -15,7 +15,7 @@ interface LiveMonitorProps {
 export const LiveMonitor: React.FC<LiveMonitorProps> = ({ socket, cameraSignals, systemStatus }) => {
   const { showToast } = useToast();
   const [intersections, setIntersections] = useState<Intersection[]>([]);
-  const [selectedCamId, setSelectedCamId] = useState<string>('CAM-BTP-001');
+  const [selectedCamId, setSelectedCamId] = useState<string>(() => localStorage.getItem('visionguard_selected_camera') || 'CAM-BTP-001');
   const [selectedCam, setSelectedCam] = useState<Intersection | null>(null);
   
   // Video upload & processing state
@@ -305,6 +305,7 @@ export const LiveMonitor: React.FC<LiveMonitorProps> = ({ socket, cameraSignals,
                   value={selectedCamId}
                   onChange={(e) => {
                     setSelectedCamId(e.target.value);
+                    localStorage.setItem('visionguard_selected_camera', e.target.value);
                     setAnnotatedFrame(null);
                     setAlerts([]);
                   }}
